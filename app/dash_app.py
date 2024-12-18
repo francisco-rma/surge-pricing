@@ -29,7 +29,6 @@ def get_driver_count_dict(cell_resolution: int = 7) -> Dict[str, int]:
         cell_resolution=cell_resolution
     )
 
-    # Creating the dictionary directly from the driver_position_counts
     return {
         data.region: data.count for data in driver_count_data.driver_position_counts
     }
@@ -49,12 +48,9 @@ def update_geojson_with_driver_counts(
 def get_geojson_layer(cell_resolution: int = 7) -> dict:
     """Generate the GeoJSON layer with driver counts."""
     try:
-        # Load the GeoJSON data
         geojson_data = load_geojson_from_file("app/geojson_h3/resolution_7.geojson")
 
-        # Fetch driver count data and prepare it in dictionary format
         driver_count_dict = get_driver_count_dict(cell_resolution)
-        # Update GeoJSON data with driver count
         geojson_data = update_geojson_with_driver_counts(
             geojson_data, driver_count_dict
         )
@@ -62,20 +58,16 @@ def get_geojson_layer(cell_resolution: int = 7) -> dict:
         return geojson_data
 
     except (FileNotFoundError, ValueError) as e:
-        # Handle errors (e.g., GeoJSON file not found or malformed JSON)
         print(f"Error: {e}")
         return {}
 
 
 def generate_folium_map():
-    # Define colormap before using it
     colormap = branca.colormap.linear.YlGnBu_09.scale(0, 3000)
 
     def style_function(feature):
-        # Get the driver count from the feature's properties
         driver_count = feature["properties"].get("driver_count", 0)
 
-        # Use the colormap to determine the color based on driver count
         return {
             "fillColor": colormap(driver_count),  # Set color based on driver count
             "color": "black",  # Border color of the cell
