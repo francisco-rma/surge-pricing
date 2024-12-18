@@ -2,11 +2,9 @@ import logging
 import os
 import random
 import signal
-import time
 import uuid
 from datetime import datetime
 
-import redis
 from dotenv import load_dotenv
 
 from app.redis_client import redis_client

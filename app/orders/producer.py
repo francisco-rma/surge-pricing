@@ -2,11 +2,9 @@ import logging
 import os
 import random
 import signal
-import time
 import uuid
 from datetime import datetime
 
-import redis
 from dotenv import load_dotenv
 
 from app.redis_client import redis_client
@@ -51,7 +49,7 @@ if __name__ == "__main__":
     with redis_client() as client:
         logger.info("Starting Orders producer...")
 
-        # Driver position producer
+        # Order Producer
         order = RedisProducer(
             client=client,
             stream_name=ORDER_STREAM,
