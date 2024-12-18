@@ -8,8 +8,7 @@ import folium
 from dash import dcc, html
 from dash.dependencies import Input, Output
 
-from app.driver_position.service import \
-    get_real_time_driver_count_for_all_cells
+from app.driver_position.service import get_real_time_driver_count_for_all_cells
 
 
 def load_geojson_from_file(filepath: str) -> dict:
