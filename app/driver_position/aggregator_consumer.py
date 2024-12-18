@@ -7,6 +7,8 @@ from contextlib import contextmanager
 import h3
 import redis
 
+from app.redis_client import redis_client
+
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = 6379
 
@@ -27,15 +29,6 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger()
-
-
-@contextmanager
-def get_redis_client():
-    client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
-    try:
-        yield client
-    finally:
-        client.close()
 
 
 def get_h3_cells(latitude, longitude, resolutions):
@@ -153,7 +146,7 @@ def claim_unacknowledged_messages(
 
 
 def main():
-    with get_redis_client() as client:
+    with redis_client() as client:
 
         last_claim_time = 0
 

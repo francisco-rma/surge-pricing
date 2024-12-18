@@ -34,6 +34,7 @@ services:
         - REDIS_HOST=redis
         - REDIS_CHANNEL=driver_position_channel  # Nome do canal
         - PYTHONUNBUFFERED=1
+        - PYTHONPATH=/app
       command: bash -c "/app/start_producer.sh"
       volumes:
         - .:/app
@@ -48,6 +49,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_CHANNEL=driver_position_channel  # Nome do canal
       - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
     command: bash -c "/app/start_aggregator.sh"
     volumes:
       - .:/app

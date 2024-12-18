@@ -4,11 +4,12 @@ import random
 import signal
 import time
 import uuid
-from contextlib import contextmanager
 from datetime import datetime
 
 import redis
 from dotenv import load_dotenv
+
+from app.redis_client import redis_client
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -19,14 +20,10 @@ BH_LAT_MAX = -19.7890619963
 BH_LON_MIN = -44.0986149944
 BH_LON_MAX = -43.860692326
 
-REDIS_HOST = os.getenv(
-    "REDIS_HOST", "localhost"
-)  # Redis host from environment variables
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))  # Redis port, default 6379
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 DRIVER_POSITION_STREAM = os.getenv("REDIS_STREAM", "driver_position_stream")
-PRODUCE_INTERVAL = float(
-    os.getenv("PRODUCE_INTERVAL", 1.0)
-)  # Sleep time between messages
+PRODUCE_INTERVAL = float(os.getenv("PRODUCE_INTERVAL", 1.0))
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -77,21 +74,6 @@ def driver_position_producer(client):
         logger.exception(f"Unexpected error in producer: {e}")
     finally:
         logger.info("Driver position producer stopped.")
-
-
-@contextmanager
-def redis_client():
-    """Context manager for Redis client."""
-    client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
-    try:
-        logger.info(f"Connecting to Redis at {REDIS_HOST}:{REDIS_PORT}")
-        yield client
-    except redis.ConnectionError as e:
-        logger.error(f"Failed to connect to Redis: {e}")
-        raise
-    finally:
-        logger.info("Closing Redis connection.")
-        client.close()
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ REDIS_CLIENT = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=Tr
 TIME_WINDOW_MINUTES = 5
 
 
-def get_real_time_driver_count(
+def get_real_time_driver_count_for_all_cells(
     cell_resolution: int = 8,
 ) -> DriverPositionsCountResponse:
     """Fetch and return driver count for the last 5 minutes at the specified H3 resolution."""
