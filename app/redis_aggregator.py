@@ -2,7 +2,6 @@ import datetime
 import logging
 import os
 import time
-from contextlib import contextmanager
 
 import h3
 import redis

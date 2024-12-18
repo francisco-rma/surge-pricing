@@ -4,10 +4,8 @@ from datetime import datetime, timedelta
 import redis
 
 from app.driver_position.aggregator_consumer import DRIVER_COUNT_KEY
-from app.driver_position.schemas import (
-    DriverPositionsCount,
-    DriverPositionsCountResponse,
-)
+from app.driver_position.schemas import (DriverPositionsCount,
+                                         DriverPositionsCountResponse)
 
 # Redis connection configuration
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")

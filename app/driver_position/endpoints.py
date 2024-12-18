@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Query
 
 from app.driver_position.schemas import DriverPositionsCountResponse
-from app.driver_position.service import get_real_time_driver_count_for_all_cells
+from app.driver_position.service import \
+    get_real_time_driver_count_for_all_cells
 
 router = APIRouter()
 

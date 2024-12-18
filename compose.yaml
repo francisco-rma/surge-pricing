@@ -50,7 +50,23 @@ services:
       - REDIS_CHANNEL=driver_position_channel  # Nome do canal
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app
-    command: bash -c "/app/start_aggregator.sh"
+    command: bash -c "/app/start_driver_positions_aggregator.sh"
+    volumes:
+      - .:/app
+
+  redis_orders_aggregator:
+    build: .
+    container_name: redis_orders_aggregator
+    depends_on:
+      - redis
+    networks:
+      - surge_pricing_network
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_CHANNEL=order_channel  # Nome do canal
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    command: bash -c "/app/start_orders_aggregator.sh"
     volumes:
       - .:/app
 
