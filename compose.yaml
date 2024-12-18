@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: surge_pricing_app
+    ports:
+      - 8000:8000
+    depends_on:
+      - redis
+    networks:
+      - surge_pricing_network
+    environment:
+      - REDIS_HOST=redis
+      - PYTHONUNBUFFERED=1
+    command: bash -c "/app/start_services.sh"
+    volumes:
+      - .:/app  # Map the current directory to /app in the container
+  redis:
+      image: redis:latest
+      container_name: redis
+      ports:
+        - "6379:6379"
+      networks:
+        - surge_pricing_network
+        
+networks:
+  surge_pricing_network:
+    driver: bridge
