@@ -6,10 +6,9 @@ import branca
 import dash
 import folium
 from dash import dcc, html
-from dash.dependencies import Input, Output
 
-from app.driver_position.service import \
-    get_real_time_driver_count_for_all_cells
+from app.data_aggregator_service import REDIS_CLIENT
+from app.driver_position.service import DriverPositionAggregator
 
 
 def load_geojson_from_file(filepath: str) -> dict:
@@ -25,10 +24,10 @@ def load_geojson_from_file(filepath: str) -> dict:
 
 def get_driver_count_dict(cell_resolution: int = 7) -> Dict[str, int]:
     """Fetch driver count data and return it as a dictionary."""
-    driver_count_data = get_real_time_driver_count_for_all_cells(
+    driver_position_aggregator = DriverPositionAggregator(REDIS_CLIENT)
+    driver_count_data = driver_position_aggregator.get_driver_count_for_all_cells(
         cell_resolution=cell_resolution
     )
-
     return {
         data.region: data.count for data in driver_count_data.driver_position_counts
     }
