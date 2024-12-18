@@ -21,10 +21,7 @@ BH_LAT_MAX = -19.7890619963
 BH_LON_MIN = -44.0986149944
 BH_LON_MAX = -43.860692326
 
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 DRIVER_POSITION_STREAM = os.getenv("REDIS_STREAM", "driver_position_stream")
-PRODUCE_INTERVAL = float(os.getenv("PRODUCE_INTERVAL", 1.0))
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -55,7 +52,7 @@ if __name__ == "__main__":
         # Driver position producer
         driver_position_producer = RedisProducer(
             client=client,
-            stream_name="driver_position_stream",
+            stream_name=DRIVER_POSITION_STREAM,
             generate_data_callback=generate_driver_position,
         )
 
