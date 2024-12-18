@@ -9,7 +9,6 @@ ORDER_COUNT_KEY = "order_count_by_region"
 
 RESOLUTIONS = [7, 8, 9]
 CONSUMER_GROUP_NAME = "order_consumer_group"
-CONSUMER_NAME = "consumer_1"
 
 
 logging.basicConfig(

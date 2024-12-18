@@ -8,7 +8,6 @@ DRIVER_COUNT_KEY = "driver_count_by_region"
 
 RESOLUTIONS = [7, 8, 9]
 CONSUMER_GROUP_NAME = "driver_position_consumer_group"
-CONSUMER_NAME = "consumer_1"
 
 
 logging.basicConfig(

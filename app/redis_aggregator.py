@@ -1,6 +1,4 @@
-import datetime
 import logging
-import os
 import time
 
 import h3
@@ -8,10 +6,6 @@ import redis
 
 from app.redis_client import redis_client
 
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = 6379
-
-RESOLUTIONS = [7, 8, 9]
 STREAM_READ_TIMEOUT = 2000
 SLEEP_INTERVAL = 0.1
 BATCH_SIZE = 10
