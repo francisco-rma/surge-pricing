@@ -20,6 +20,8 @@ BATCH_SIZE = 10
 CONSUMER_GROUP_NAME = "driver_position_consumer_group"
 CONSUMER_NAME = "consumer_1"
 
+CLAIM_INTERVAL = 60
+
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -153,7 +155,6 @@ def claim_unacknowledged_messages(
 def main():
     with get_redis_client() as client:
 
-        CLAIM_INTERVAL = 60
         last_claim_time = 0
 
         create_consumer_group(client)
