@@ -23,7 +23,35 @@ services:
         - "6379:6379"
       networks:
         - surge_pricing_network
-        
+  redis_producer:
+      build: .
+      container_name: redis_producer
+      depends_on:
+        - redis
+      networks:
+        - surge_pricing_network
+      environment:
+        - REDIS_HOST=redis
+        - REDIS_CHANNEL=driver_position_channel  # Nome do canal
+        - PYTHONUNBUFFERED=1
+      command: bash -c "/app/start_producer.sh"
+      volumes:
+        - .:/app
+  redis_aggregator:
+    build: .
+    container_name: redis_aggregator
+    depends_on:
+      - redis
+    networks:
+      - surge_pricing_network
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_CHANNEL=driver_position_channel  # Nome do canal
+      - PYTHONUNBUFFERED=1
+    command: bash -c "/app/start_aggregator.sh"
+    volumes:
+      - .:/app
+
 networks:
   surge_pricing_network:
     driver: bridge
