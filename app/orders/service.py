@@ -14,3 +14,6 @@ class OrderAggregator(DataAggregator):
     def get_order_count_for_all_regions(self, cell_resolution: int):
         """Fetch and return order count for all regions."""
         return self.get_aggregated_data(cell_resolution)
+
+    def get_order_count_in_last_minute(self, cell_id: str):
+        return self.get_count_in_last_minute(cell_id=cell_id)

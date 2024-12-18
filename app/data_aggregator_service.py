@@ -1,6 +1,7 @@
 import os
 from datetime import datetime, timedelta
 
+import h3
 import redis
 
 from app.driver_position.aggregator_consumer import DRIVER_COUNT_KEY
@@ -61,3 +62,12 @@ class DataAggregator:
         ]
 
         return DriverPositionsCountResponse(driver_position_counts=aggregated_data)
+
+    def get_count_in_last_minute(self, cell_id: str):
+        time_keys = [datetime.utcnow().strftime("%Y-%m-%dT%H:%M")]
+        cell_resolution = h3.get_resolution(cell_id)
+
+        total_count = self._aggregate_counts(time_keys, cell_resolution=cell_resolution)
+
+        count = total_count[cell_id]
+        return DriverPositionsCount(region=cell_id, count=count)
