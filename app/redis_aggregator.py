@@ -1,7 +1,9 @@
+import json
 import logging
 import time
 
 import h3
+import numpy as np
 import redis
 
 from app.redis_client import redis_client
@@ -82,11 +84,13 @@ class StreamAggregator:
                         f"Processing {len(messages)} messages from {stream_name}"
                     )
                     for message_id, data in messages:
+                        logger.info(f"DATA: {data}")
                         try:
                             latitude = float(data["latitude"])
                             longitude = float(data["longitude"])
                             timestamp = data["timestamp"]
                             h3_cells = self.get_h3_cells(latitude, longitude)
+                            logger.info(f"h3cells: {h3_cells}")
                             self.update_count(h3_cells, timestamp)
                             logger.debug(
                                 f"Updated counts for {h3_cells} at {timestamp}"

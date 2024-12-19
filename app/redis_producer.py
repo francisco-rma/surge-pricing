@@ -42,7 +42,7 @@ class RedisProducer:
         global shutdown_flag
         try:
             while not shutdown_flag:
-                data = self.generate_data_callback()
+                data = self.generate_data_callback(self.client)
                 try:
                     with self.client.pipeline() as pipe:
                         # Add data to the stream
