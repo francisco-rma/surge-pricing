@@ -12,6 +12,6 @@ def order_count(cell_resolution: int = Query(..., description="H3 cell resolutio
     """API endpoint to get the real-time driver count."""
 
     orders_aggregator = OrderAggregator(REDIS_CLIENT)
-    return orders_aggregator.get_order_count_for_all_regions(
+    return orders_aggregator.get_order_count_for_all_cells(
         cell_resolution=cell_resolution
     )

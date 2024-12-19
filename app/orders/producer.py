@@ -21,6 +21,13 @@ BH_LON_MAX = -43.860692326
 
 ORDER_STREAM = os.getenv("ORDER_REDIS_STREAM", "order_stream")
 
+BH_LAT_CENTER = -19.9191
+BH_LON_CENTER = -43.9386
+
+LAT_STDDEV = 0.05
+LON_STDDEV = 0.05
+
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -36,8 +43,8 @@ def generate_order():
         "order_id": str(order_id),
         "customer_id": str(uuid.uuid4()),
         "order_value": f"{random.uniform(10.0, 500.0):.2f}",
-        "latitude": f"{random.uniform(BH_LAT_MIN, BH_LAT_MAX):.6f}",
-        "longitude": f"{random.uniform(BH_LON_MIN, BH_LON_MAX):.6f}",
+        "latitude": f"{random.gauss(BH_LAT_CENTER, LAT_STDDEV):.6f}",
+        "longitude": f"{random.gauss(BH_LON_CENTER, LON_STDDEV):.6f}",
         "timestamp": datetime.utcnow().isoformat(),
     }
 

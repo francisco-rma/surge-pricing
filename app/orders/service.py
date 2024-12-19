@@ -11,7 +11,7 @@ class OrderAggregator(DataAggregator):
             time_window_minutes=time_window_minutes,
         )
 
-    def get_order_count_for_all_regions(self, cell_resolution: int):
+    def get_order_count_for_all_cells(self, cell_resolution: int):
         """Fetch and return order count for all regions."""
         return self.get_aggregated_data(cell_resolution)
 
