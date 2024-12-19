@@ -70,6 +70,46 @@ services:
     volumes:
       - .:/app
 
+  redis_drivers_persister:
+    build: .
+    container_name: redis_drivers_persister
+    depends_on:
+      - redis
+    networks:
+      - surge_pricing_network
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_CHANNEL=order_channel  # Nome do canal
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    command: bash -c "/app/start_driver_positions_persist.sh"
+    volumes:
+      - .:/app
+
+  cassandra:
+    image: cassandra:5.0.2
+    container_name: cassandra
+    ports:
+      - "9042:9042"
+    environment:
+      CASSANDRA_CLUSTER_NAME: "Test Cluster"
+      CASSANDRA_NUM_TOKENS: 256
+      CASSANDRA_START_RPC: "true"
+      CASSANDRA_LISTEN_ADDRESS: "127.0.0.1"  # Correct this to 0.0.0.0
+      CASSANDRA_RPC_ADDRESS: "0.0.0.0"    # Keep this as 0.0.0.0
+      CASSANDRA_BROADCAST_ADDRESS: "127.0.0.1"
+    volumes:
+      - cassandra_data_2:/var/lib/cassandra
+    healthcheck:
+      test: [ "CMD", "cqlsh", "-e", "DESCRIBE KEYSPACES" ]
+      interval: 30s
+      retries: 3
+    networks:
+      - surge_pricing_network
+
 networks:
   surge_pricing_network:
     driver: bridge
+
+volumes:
+  cassandra_data_2:

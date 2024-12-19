@@ -24,8 +24,8 @@ ORDER_STREAM = os.getenv("ORDER_REDIS_STREAM", "order_stream")
 BH_LAT_CENTER = -19.9191
 BH_LON_CENTER = -43.9386
 
-LAT_STDDEV = 0.05
-LON_STDDEV = 0.05
+LAT_STDDEV = 0.01
+LON_STDDEV = 0.01
 
 
 logging.basicConfig(
