@@ -2,6 +2,7 @@ import logging
 
 from app.redis_client import redis_client
 from app.redis_persist import StreamSave
+from cassandra_db.cassandra_connection import create_cassandra_connection
 
 DRIVER_POSITION_STREAM = "driver_position_stream"
 DRIVER_COUNT_KEY = "driver_count_by_region"
