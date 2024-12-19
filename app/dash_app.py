@@ -13,208 +13,157 @@ from app.orders.service import OrderAggregator
 from app.surge_pricing.service import SurgePricingCalculator
 
 
-def load_geojson_from_file(filepath: str) -> dict:
-    """Load GeoJSON data from a file."""
-    try:
-        with open(filepath, "r") as file:
-            return json.load(file)
-    except FileNotFoundError:
-        raise FileNotFoundError(f"GeoJSON file not found at {filepath}")
-    except json.JSONDecodeError:
-        raise ValueError(f"Error decoding JSON in the file at {filepath}")
+class GeoJSONUpdater:
+    def __init__(self, filepath: str):
+        self.filepath = filepath
+        self.geojson_data = self._load_geojson()
+
+    def _load_geojson(self) -> dict:
+        try:
+            with open(self.filepath, "r") as file:
+                return json.load(file)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"GeoJSON file not found at {self.filepath}")
+        except json.JSONDecodeError:
+            raise ValueError(f"Error decoding JSON in the file at {self.filepath}")
+
+    def update_features(self, update_dict: Dict[str, any], key: str):
+        for feature in self.geojson_data.get("features", []):
+            h3_index = feature["properties"].get("h3_index")
+            feature["properties"][key] = update_dict.get(h3_index, 0)
+
+        return self.geojson_data
 
 
-def get_driver_count_dict(cell_resolution: int = 7) -> Dict[str, int]:
-    """Fetch driver count data and return it as a dictionary."""
-    driver_position_aggregator = DriverPositionAggregator(REDIS_CLIENT)
-    driver_count_data = driver_position_aggregator.get_driver_count_for_all_cells(
-        cell_resolution=cell_resolution
-    )
-    return {
-        data.region: data.count for data in driver_count_data.driver_position_counts
-    }
+class MapGenerator:
+    def __init__(
+        self, center: list, zoom_start: int, colormap_scale: tuple, colormap_name: str
+    ):
+        self.map = folium.Map(location=center, zoom_start=zoom_start)
+        self.colormap = branca.colormap.linear.YlGnBu_09.scale(*colormap_scale)
+
+    def add_geojson_layer(self, geojson_data: dict, key: str, tooltip_alias: str):
+        def style_function(feature):
+            value = feature["properties"].get(key, 0)
+            return {
+                "fillColor": self.colormap(value),
+                "color": "black",
+                "weight": 1,
+                "fillOpacity": 0.6,
+            }
+
+        folium.TileLayer("cartodbpositron").add_to(self.map)
+
+        folium.GeoJson(
+            geojson_data,
+            name="H3 Cells",
+            tooltip=folium.GeoJsonTooltip(
+                fields=[key],
+                aliases=[tooltip_alias],
+                localize=True,
+                sticky=True,
+                labels=True,
+            ),
+            style_function=style_function,
+        ).add_to(self.map)
+
+        return self.map._repr_html_()
 
 
-def get_order_count_dict(cell_resolution: int = 7) -> Dict[str, int]:
-    """Fetch order count data and return it as a dictionary."""
-    order_aggregator = OrderAggregator(
-        REDIS_CLIENT
-    )  # Assuming OrderAggregator is defined
-    order_count_data = order_aggregator.get_order_count_for_all_cells(cell_resolution)
-    return {data.region: data.count for data in order_count_data.driver_position_counts}
+class DataProvider:
+    @staticmethod
+    def get_driver_count_dict(cell_resolution: int = 7) -> Dict[str, int]:
+        driver_position_aggregator = DriverPositionAggregator(REDIS_CLIENT)
+        driver_count_data = driver_position_aggregator.get_driver_count_for_all_cells(
+            cell_resolution=cell_resolution
+        )
+        return {
+            data.region: data.count for data in driver_count_data.driver_position_counts
+        }
 
+    @staticmethod
+    def get_order_count_dict(cell_resolution: int = 7) -> Dict[str, int]:
+        order_aggregator = OrderAggregator(REDIS_CLIENT)
+        order_count_data = order_aggregator.get_order_count_for_all_cells(
+            cell_resolution
+        )
+        return {
+            data.region: data.count for data in order_count_data.driver_position_counts
+        }
 
-def get_surge_price_dict(cell_resolution: int = 7) -> Dict[str, float]:
-    """Fetch surge price data and return it as a dictionary."""
-    # Implement the logic to fetch surge price data
-    driver_position_aggregator = DriverPositionAggregator(
-        redis_client=REDIS_CLIENT, time_window_minutes=1
-    )
-    order_aggregator = OrderAggregator(redis_client=REDIS_CLIENT, time_window_minutes=1)
-
-    surge_price_calculator = SurgePricingCalculator(
-        base_price=1,
-        driver_position_aggregator=driver_position_aggregator,
-        order_aggregator=order_aggregator,
-    )
-    surge_price_data = surge_price_calculator.calculate_surge_for_all_cells(
-        cell_resolution
-    )
-
-    return surge_price_data
-
-
-def update_geojson_with_driver_counts(
-    geojson_data: dict, driver_count_dict: Dict[str, int]
-) -> dict:
-    """Update GeoJSON features with driver count data."""
-    for feature in geojson_data.get("features", []):
-        h3_index = feature["properties"].get("h3_index")
-        feature["properties"]["driver_count"] = driver_count_dict.get(h3_index, 0)
-
-    return geojson_data
-
-
-def update_geojson_with_order_counts(
-    geojson_data: dict, order_count_dict: Dict[str, int]
-) -> dict:
-    """Update GeoJSON features with order count data."""
-    for feature in geojson_data.get("features", []):
-        h3_index = feature["properties"].get("h3_index")
-        feature["properties"]["order_count"] = order_count_dict.get(h3_index, 0)
-
-    return geojson_data
-
-
-def update_geojson_with_surge_prices(
-    geojson_data: dict, surge_price_dict: Dict[str, float]
-) -> dict:
-    """Update GeoJSON features with surge price data."""
-    for feature in geojson_data.get("features", []):
-        h3_index = feature["properties"].get("h3_index")
-        feature["properties"]["surge_price"] = surge_price_dict.get(h3_index, 0)
-
-    return geojson_data
-
-
-def get_geojson_layer(cell_resolution: int = 7) -> dict:
-    """Generate the GeoJSON layer with driver counts."""
-    try:
-        geojson_data = load_geojson_from_file("app/geojson_h3/resolution_7.geojson")
-
-        driver_count_dict = get_driver_count_dict(cell_resolution)
-        geojson_data = update_geojson_with_driver_counts(
-            geojson_data, driver_count_dict
+    @staticmethod
+    def get_surge_price_dict(cell_resolution: int = 7) -> Dict[str, float]:
+        driver_position_aggregator = DriverPositionAggregator(
+            redis_client=REDIS_CLIENT, time_window_minutes=1
+        )
+        order_aggregator = OrderAggregator(
+            redis_client=REDIS_CLIENT, time_window_minutes=1
         )
 
-        return geojson_data
+        surge_price_calculator = SurgePricingCalculator(
+            base_price=1,
+            driver_position_aggregator=driver_position_aggregator,
+            order_aggregator=order_aggregator,
+        )
+        surge_price_data = surge_price_calculator.calculate_surge_for_all_cells(
+            cell_resolution
+        )
 
-    except (FileNotFoundError, ValueError) as e:
-        print(f"Error: {e}")
-        return {}
-
-
-def generate_folium_map_driver_count():
-    colormap = branca.colormap.linear.YlGnBu_09.scale(0, 100)
-
-    def style_function(feature):
-        driver_count = feature["properties"].get("driver_count", 0)
-
-        return {
-            "fillColor": colormap(driver_count),  # Set color based on driver count
-            "color": "black",  # Border color of the cell
-            "weight": 1,  # Border weight
-            "fillOpacity": 0.6,  # Transparency of the fill color
-        }
-
-    # Set the initial center of the map and zoom level
-    folium_map = folium.Map(location=[-19.9191, -43.9378], zoom_start=13)
-
-    # Add a tile layer
-    folium.TileLayer("cartodbpositron").add_to(folium_map)
-
-    # Add GeoJSON layer with H3 cells (resolution 7)
-    geojson_data = get_geojson_layer(cell_resolution=7)
-
-    # Add GeoJSON data with styling and tooltips
-    geojson_layer = folium.GeoJson(
-        geojson_data,
-        name="H3 Cells",
-        tooltip=folium.GeoJsonTooltip(
-            fields=["driver_count"],  # The H3 cell ID
-            aliases=["Driver Position Count:"],
-            localize=True,
-            sticky=True,
-            labels=True,
-        ),
-        style_function=style_function,
-    ).add_to(folium_map)
-
-    return folium_map._repr_html_()
+        return surge_price_data
 
 
-def generate_folium_map_order_count():
-    """Generate map with order counts."""
-    colormap = branca.colormap.linear.YlOrRd_09.scale(0, 3000)
-
-    def style_function(feature):
-        order_count = feature["properties"].get("order_count", 0)
-        return {
-            "fillColor": colormap(order_count),
-            "color": "black",
-            "weight": 1,
-            "fillOpacity": 0.6,
-        }
-
-    folium_map = folium.Map(location=[-19.9191, -43.9378], zoom_start=13)
-    folium.TileLayer("cartodbpositron").add_to(folium_map)
-    geojson_data = get_geojson_layer(cell_resolution=7)
-
-    order_count_dict = get_order_count_dict(cell_resolution=7)
-    geojson_data = update_geojson_with_order_counts(geojson_data, order_count_dict)
-
-    geojson_layer = folium.GeoJson(
-        geojson_data,
-        name="H3 Cells",
-        tooltip=folium.GeoJsonTooltip(
-            fields=["order_count"], aliases=["Order Position Count:"], sticky=True
-        ),
-        style_function=style_function,
-    ).add_to(folium_map)
-
-    return folium_map._repr_html_()
+# Usage
 
 
-def generate_folium_map_surge_price():
-    """Generate map with surge prices."""
-    colormap = branca.colormap.linear.YlOrRd_09.scale(0, 5)  # Adjust scale as needed
+# Generate Driver Count Map
+def generate_driver_count_map():
+    updater = GeoJSONUpdater("app/geojson_h3/resolution_7.geojson")
+    driver_count_dict = DataProvider.get_driver_count_dict(cell_resolution=7)
+    geojson_data = updater.update_features(driver_count_dict, key="driver_count")
 
-    def style_function(feature):
-        surge_price = feature["properties"].get("surge_price", 0)
-        return {
-            "fillColor": colormap(surge_price),
-            "color": "black",
-            "weight": 1,
-            "fillOpacity": 0.6,
-        }
+    map_generator = MapGenerator(
+        center=[-19.9191, -43.9378],
+        zoom_start=13,
+        colormap_scale=(0, 200),
+        colormap_name="YlGnBu_09",
+    )
+    return map_generator.add_geojson_layer(
+        geojson_data, key="driver_count", tooltip_alias="Driver Count:"
+    )
 
-    folium_map = folium.Map(location=[-19.9191, -43.9378], zoom_start=13)
-    folium.TileLayer("cartodbpositron").add_to(folium_map)
 
-    geojson_data = get_geojson_layer(cell_resolution=7)
-    surge_price_dict = get_surge_price_dict(cell_resolution=7)
-    geojson_data = update_geojson_with_surge_prices(geojson_data, surge_price_dict)
+# Generate Order Count Map
+def generate_order_count_map():
+    updater = GeoJSONUpdater("app/geojson_h3/resolution_7.geojson")
+    order_count_dict = DataProvider.get_order_count_dict(cell_resolution=7)
+    geojson_data = updater.update_features(order_count_dict, key="order_count")
 
-    geojson_layer = folium.GeoJson(
-        geojson_data,
-        name="H3 Cells with Surge Price",
-        tooltip=folium.GeoJsonTooltip(
-            fields=["surge_price"], aliases=["Surge Price:"], sticky=True
-        ),
-        style_function=style_function,
-    ).add_to(folium_map)
+    map_generator = MapGenerator(
+        center=[-19.9191, -43.9378],
+        zoom_start=13,
+        colormap_scale=(0, 3000),
+        colormap_name="YlOrRd_09",
+    )
+    return map_generator.add_geojson_layer(
+        geojson_data, key="order_count", tooltip_alias="Order Count:"
+    )
 
-    return folium_map._repr_html_()
+
+# Generate Surge Price Map
+def generate_surge_price_map():
+    updater = GeoJSONUpdater("app/geojson_h3/resolution_7.geojson")
+    surge_price_dict = DataProvider.get_surge_price_dict(cell_resolution=7)
+    geojson_data = updater.update_features(surge_price_dict, key="surge_price")
+
+    map_generator = MapGenerator(
+        center=[-19.9191, -43.9378],
+        zoom_start=13,
+        colormap_scale=(0, 5),
+        colormap_name="YlOrRd_09",
+    )
+    return map_generator.add_geojson_layer(
+        geojson_data, key="surge_price", tooltip_alias="Surge Price:"
+    )
 
 
 app_dash = dash.Dash(__name__, requests_pathname_prefix="/dash/")
@@ -230,7 +179,7 @@ app_dash.layout = html.Div(
                     [
                         html.Iframe(
                             id="driver-count-map",
-                            srcDoc=generate_folium_map_driver_count(),
+                            srcDoc=generate_driver_count_map(),
                             width="100%",
                             height="800px",
                             style={"border": "none", "margin": "0", "display": "block"},
@@ -247,7 +196,7 @@ app_dash.layout = html.Div(
                     [
                         html.Iframe(
                             id="order-count-map",
-                            srcDoc=generate_folium_map_order_count(),
+                            srcDoc=generate_order_count_map(),
                             width="100%",
                             height="800px",
                             style={"border": "none", "margin": "0", "display": "block"},
@@ -274,7 +223,7 @@ app_dash.layout = html.Div(
                     [
                         html.Iframe(
                             id="surge-price-map",
-                            srcDoc=generate_folium_map_surge_price(),
+                            srcDoc=generate_surge_price_map(),
                             width="100%",
                             height="800px",
                             style={"border": "none", "margin": "0", "display": "block"},
@@ -298,7 +247,7 @@ app_dash.layout = html.Div(
 def update_driver_map(n_clicks):
     """Callback to update the driver count map when the button is clicked."""
     if n_clicks > 0:
-        return generate_folium_map_driver_count()
+        return generate_driver_count_map()
     else:
         return dash.no_update
 
@@ -310,7 +259,7 @@ def update_driver_map(n_clicks):
 def update_order_map(n_clicks):
     """Callback to update the order count map when the button is clicked."""
     if n_clicks > 0:
-        return generate_folium_map_order_count()
+        return generate_order_count_map()
     else:
         return dash.no_update
 
@@ -322,6 +271,6 @@ def update_order_map(n_clicks):
 def update_surge_price_map(n_clicks):
     """Callback to update the surge price map when the button is clicked."""
     if n_clicks > 0:
-        return generate_folium_map_surge_price()
+        return generate_surge_price_map()
     else:
         return dash.no_update
