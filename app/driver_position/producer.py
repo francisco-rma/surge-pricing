@@ -82,7 +82,7 @@ def generate_driver_position(client: redis.Redis):
     logger.info(f"New lon: {new_lon}")
     driver_data["latitude"] = new_lat
     driver_data["longitude"] = new_lon
-    driver_data["timestamp"] = time.time()
+    driver_data["timestamp"] = time.time() # test
 
     client.set(
         driver_id,
